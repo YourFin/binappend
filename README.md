@@ -1,14 +1,14 @@
 # binappend
-Library for packing binary data onto the end of files.
+Library for packing binary data onto the end of files, targeted at adding adding static assets to executables after they're compiled.
 
-A cli tool for reading and writing this file format can be found [here](https://github.com/yourfin/binappend-cli).
+A cli tool for reading and writing this "file format" can be found [here](https://github.com/yourfin/binappend-cli).
+
+
 
 The following is copied from [this issue](https://github.com/gobuffalo/packr/issues/74) on github.com/gobuffalo/packr:
 
 ## Background
 For one of [my own projects](https://github.com/yourfin/transcodebot), I ran into the problem that the memory overhead for embedding some of the files involved was unacceptably high over the potential lifetime of the program. I still wanted self contained binaries though, so I did some digging and ran into [this](https://stackoverflow.com/questions/5795446/appending-data-to-an-exe) on stackoverflow, and as it turns out [none of the major operating systems care if you dump crap at the end of an executable.](https://oroboro.com/packing-data-compiled-binar/) This, combined with the discovery of [the osext](https://github.com/kardianos/osext) library for finding the path to the current executable prompted the development of the following scheme for embedding files, which I have working as far as I need for my own purposes at this point.
-
-Relevant code can be found [here](https://github.com/YourFin/transcodebot/blob/77a5a9dc6b79686248d921d8f5caa2607226b9f0/build/file-insertion.go) for the writer and [here](https://github.com/YourFin/transcodebot/blob/77a5a9dc6b79686248d921d8f5caa2607226b9f0/build/appendReader.go) for the reader
 
 ## High level description
 
