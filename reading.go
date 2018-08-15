@@ -42,7 +42,7 @@ type Extractor struct {
 }
 
 // Procedure:
-//  MakeAppendReader
+//  MakeExtractor
 // Purpose:
 //  To create a Extractor for a given file
 // Parameters:
@@ -55,7 +55,7 @@ type Extractor struct {
 //  filename was appended to with by a er
 // Postconditions:
 //  reader is initialized to grab the files from files
-func MakeAppendExtractor(filename string) (reader *Extractor, err error) {
+func MakeExtractor(filename string) (reader *Extractor, err error) {
 	reader = &Extractor{}
 	reader.filename = filename
 	fileHandle, err := os.Open(filename)
@@ -184,6 +184,28 @@ func (extractor *Extractor) ByteArray(dataName string) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+// Procedure:
+//  *Extractor.AvalibleData
+// Purpose:
+//  To return all avalible names to read
+// Parameters:
+//  The *Reader being acted upon: reader
+// Produces:
+//  A list of all names of data that can be read: names []string
+// Preconditions:
+//  No additional
+// Postconditions:
+//  All the name keys of avalible data are in $names
+func (extractor *Extractor) AvalibleData() []string {
+	names := make([]string, len(extractor.metadata.Data))
+	counter := 0
+	for key := range extractor.metadata.Data {
+		names[counter] = key
+		counter += 1
+	}
+	return names
 }
 
 // Type:

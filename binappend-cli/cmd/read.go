@@ -22,29 +22,66 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/yourfin/binappend"
 )
+
+var printNames bool
 
 // readCmd represents the read command
 var readCmd = &cobra.Command{
-	Use:   "read",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "read [appended_file] [name_of_data]",
+	Short: "Read appended data by name from a file",
+	Long: `Read appened data by name from appended_file, appened in
+the same format that "binappend write" uses.
+See github.com/yourfin/binappend for details on the format`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("read called")
+		if printNames {
+			if len(args) != 1 {
+				fmt.Fprintln(
+					os.Stderr,
+					"The --dump-table option takes exactly one argument.\n",
+					"Given: ",
+					len(args),
+				)
+			}
+			extractor, err := binappend.MakeExtractor(args[0])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "make extractor err: ", err)
+			}
+			for _, name := range extractor.AvalibleData() {
+				fmt.Println(name)
+			}
+		} else {
+			if len(args) != 2 {
+				fmt.Fprintln(os.Stderr, "read takes exactly two arguments\nAdd the --help option for help")
+			}
+			extractor, err := binappend.MakeExtractor(args[0])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "make extractor err: ", err)
+				os.Exit(1)
+			}
+			reader, err := extractor.GetReader(args[1])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "make reader err: ", err)
+				os.Exit(1)
+			}
+			_, err = io.Copy(os.Stdout, reader)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "reader err: ", err)
+				os.Exit(1)
+			}
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(readCmd)
 
-	// Here you will define your flags and configuration settings.
+	readCmd.PersistentFlags().BoolVarP(&printNames, "dump-table", "d", false, "print all names that can be read from the file")
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
