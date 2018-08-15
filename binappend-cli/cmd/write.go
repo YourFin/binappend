@@ -28,6 +28,8 @@ import (
 	"github.com/yourfin/binappend"
 )
 
+var compressed bool
+
 // writeCmd represents the write command
 var writeCmd = &cobra.Command{
 	Use:   "write [append-ee] [file to append] [file to append] ...",
@@ -46,7 +48,7 @@ See github.com/yourfin/binappend for details on the format`,
 			os.Exit(1)
 		}
 		for _, filename := range args[1:] {
-			err = appender.AppendFile(filename)
+			err = appender.AppendFile(filename, compressed)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Append \"%s\" err: %s\n", filename, err)
 				os.Exit(1)
@@ -58,4 +60,5 @@ See github.com/yourfin/binappend for details on the format`,
 
 func init() {
 	rootCmd.AddCommand(writeCmd)
+	rootCmd.PersistentFlags().BoolVarP(&compressed, "compress", "c", false, "Compress the files")
 }

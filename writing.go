@@ -32,13 +32,12 @@ import (
 )
 
 type appendedData struct {
-	//TODO: Copy to temp file before opening a reader
-	//TODO: CopyToTmp bool
 	StartFilePtr int64 `json:"start_file_pointer"`
-	ZippedSize   int64 `json:"zipped_block_size"`
+	BlockSize    int64 `json:"block_size"`
+	Zipped       bool  `json:"zipped"`
 }
 
-const METADATA_VERSION string = "0.1"
+const METADATA_VERSION string = "0.2"
 type appendedMetadata struct {
 	Version string
 	Data    map[string]appendedData
@@ -53,7 +52,7 @@ type Appender struct {
 // Procedure:
 //  MakeAppender
 // Purpose:
-//  To create a Appender
+//  To create an Appender
 // Parameters:
 //  The name of the file to append to: filename string
 //  A function that wraps an io.Writer: writeWrapper
@@ -82,13 +81,14 @@ func MakeAppender(filename string) (*Appender, error) {
 }
 
 // Procedure:
-//  Appender.AppendStreamReader
+//  *Appender.AppendStreamReader
 // Purpose:
 //  To append the entirety of a stream in an appended file block
 // Parameters:
 //  The parent *Appender: appender
 //  The unique name of the stream: name string
 //  The reader to pull data out of: source io.Reader
+//  Whether to compress the stream: compressed bool
 // Produces:
 //  Side effects
 //  Any errors in writing to the filesystem: err error
@@ -101,11 +101,13 @@ func MakeAppender(filename string) (*Appender, error) {
 //  appender's internal metadata has been updated to reflect the addition
 //  Errors will be filesystem related
 //
-//  bash equivalent is executed:
+//  if $compressed: bash equivalent is executed:
 //    $source | gzip >> $appender.file
+//  else
+//    $source >> $appender.file
 //
-//  $appender.file.ByteArray()[$appender.metadata[$name].StartFilePtr:$appender.metadata[$name].ZippedSize].gunzip() == $source.ByteArray[]
-func (appender *Appender) AppendStreamReader(name string, source io.Reader) error {
+//  $appender.file.ByteArray()[$appender.metadata[$name].StartFilePtr[:$appender].metadata[$name].[BlockSize].gunzip() == $source.ByteArray[]
+func (appender *Appender) AppendStreamReader(name string, source io.Reader, compressed bool) error {
 	appender.mux.Lock()
 	defer appender.mux.Unlock()
 
@@ -113,12 +115,20 @@ func (appender *Appender) AppendStreamReader(name string, source io.Reader) erro
 	if err != nil {
 		return errors.Wrap(err, "Seeking to end of file (1)")
 	}
-	gzWriter := gzip.NewWriter(appender.fileHandle)
-	_, err = io.Copy(gzWriter, source)
-	if err != nil {
-		return errors.Wrap(err, "Writing zipped data to file")
+	if compressed {
+		gzWriter := gzip.NewWriter(appender.fileHandle)
+		_, err = io.Copy(gzWriter, source)
+		if err != nil {
+			return errors.Wrap(err, "Writing data to file")
+		}
+
+		gzWriter.Close()
+	} else {
+		_, err = io.Copy(appender.fileHandle, source)
+		if err != nil {
+			return errors.Wrap(err, "Writing data to file")
+		}
 	}
-	gzWriter.Close()
 
 	endPtr, err := appender.fileHandle.Seek(0, io.SeekEnd)
 	if err != nil {
@@ -127,19 +137,21 @@ func (appender *Appender) AppendStreamReader(name string, source io.Reader) erro
 
 	fileMetadata := appendedData{}
 	fileMetadata.StartFilePtr = startPtr
-	fileMetadata.ZippedSize = endPtr - startPtr
+	fileMetadata.BlockSize = endPtr - startPtr
+	fileMetadata.Zipped = compressed
 
 	appender.metadata.Data[name] = fileMetadata
 	return nil
 }
 
 // Procedure:
-//  Appender.AppendFile
+//  *Appender.AppendFile
 // Purpose:
 //  To gzip and pack a file onto the end of the Appender's file
 // Parameters:
 //  The calling Appender: appender Appender
 //  The file to append: source string
+//  Whether or not to compress the file: compressed bool
 // Produces:
 //  Side effects:
 //    filesystem
@@ -153,7 +165,7 @@ func (appender *Appender) AppendStreamReader(name string, source io.Reader) erro
 // Postconditions:
 //  A reader stream from $source will be passed to $appender.AppendStreamReader,
 //    with the name parameter as source
-func (appender *Appender) AppendFile(source string) error {
+func (appender *Appender) AppendFile(source string, compressed bool) error {
 	sourceHandle, err := os.Open(source)
 	if err != nil {
 		return errors.Wrapf(err, "Opening file: %s", source)
@@ -166,7 +178,7 @@ func (appender *Appender) AppendFile(source string) error {
 	}
 	appender.mux.Unlock()
 
-	err = appender.AppendStreamReader(source, sourceHandle)
+	err = appender.AppendStreamReader(source, sourceHandle, compressed)
 	if err != nil {
 		return errors.Wrap(err, "Appending file stream")
 	}
@@ -174,7 +186,7 @@ func (appender *Appender) AppendFile(source string) error {
 }
 
 // Procedure:
-//  Appender.Close()
+//  *Appender.Close()
 // Purpose:
 //  To finish writing to the file being appended to
 //    and free it for use elsewhere
