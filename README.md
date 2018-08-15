@@ -10,12 +10,6 @@ For one of [my own projects](https://github.com/yourfin/transcodebot), I ran int
 
 Relevant code can be found [here](https://github.com/YourFin/transcodebot/blob/77a5a9dc6b79686248d921d8f5caa2607226b9f0/build/file-insertion.go) for the writer and [here](https://github.com/YourFin/transcodebot/blob/77a5a9dc6b79686248d921d8f5caa2607226b9f0/build/appendReader.go) for the reader
 
-Currently, installing transcodebot and calling
-
-    transcodebot watch [binary_standin] [file_to_append]
-
-Will pack $file\_to\_append onto $binary_standin and then unpack it to stdout.
-
 ## High level description
 
 1. Compile the binary normally
