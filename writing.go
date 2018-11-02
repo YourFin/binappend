@@ -21,12 +21,13 @@
 package binappend
 
 import (
-	"os"
-	"io"
-	"sync"
-	"encoding/json"
-	"encoding/binary"
+	"bytes"
 	"compress/gzip"
+	"encoding/binary"
+	"encoding/json"
+	"io"
+	"os"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -38,6 +39,7 @@ type appendedData struct {
 }
 
 const METADATA_VERSION string = "0.2"
+
 type appendedMetadata struct {
 	Version string
 	Data    map[string]appendedData
@@ -183,6 +185,27 @@ func (appender *Appender) AppendFile(source string, compressed bool) error {
 		return errors.Wrap(err, "Appending file stream")
 	}
 	return sourceHandle.Close()
+}
+
+// Procedure:
+//  *Appender.AppendByteArray
+// Purpose:
+//  To append a bytearray to a file
+// Parameters:
+//  The name of the data: name string
+//  The data to append: data []byte
+//  Whether to compress the data: compressed bool
+// Produces:
+//  Side effects:
+//    filesystem
+//    internal state changes
+//  Any errors in writing to the filesystem: err error
+// Preconditions:
+//  No additional, although you should probably make sure that data is not empty
+// Postconditions:
+//  AppendSteamReader is called with a reader wrapped around data.
+func (appender *Appender) AppendByteArray(name string, data []byte, compressed bool) err {
+	return appender.AppendStreamReader(name, bytes.NewReader(data), compressed)
 }
 
 // Procedure:
