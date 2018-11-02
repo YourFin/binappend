@@ -204,7 +204,7 @@ func (appender *Appender) AppendFile(source string, compressed bool) error {
 //  No additional, although you should probably make sure that data is not empty
 // Postconditions:
 //  AppendSteamReader is called with a reader wrapped around data.
-func (appender *Appender) AppendByteArray(name string, data []byte, compressed bool) err {
+func (appender *Appender) AppendByteArray(name string, data []byte, compressed bool) error {
 	return appender.AppendStreamReader(name, bytes.NewReader(data), compressed)
 }
 
