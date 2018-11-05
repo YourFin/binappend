@@ -49,6 +49,7 @@ type Appender struct {
 	fileHandle *os.File
 	metadata   appendedMetadata
 	mux        *sync.Mutex
+	filename   string
 }
 
 // Procedure:
@@ -79,7 +80,24 @@ func MakeAppender(filename string) (*Appender, error) {
 	output.metadata = appendedMetadata{}
 	output.metadata.Data = make(map[string]appendedData)
 	output.metadata.Version = METADATA_VERSION
+	output.filename = filename
 	return &output, nil
+}
+
+// Procedure:
+//  *Appender.FileName
+// Purpose:
+//  To retrieve the filename associated with an Appender
+// Parameters:
+//  None
+// Produces:
+//  filename, a string
+// Preconditions:
+//  None.
+// Postconditions:
+//  Returns the filename private field
+func (appender *Appender) FileName() string {
+	return appender.filename
 }
 
 // Procedure:
